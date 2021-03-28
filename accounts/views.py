@@ -95,7 +95,7 @@ class UserProfileView(ModelViewSet):
         keyword = data.get('keyword', None)
         
         if keyword:
-            search_fields = ('user__username', 'first_name', 'last_name')
+            search_fields = ('user__username', 'first_name', 'last_name', 'user__email')
             query = self.get_query(keyword, search_fields)
             return self.queryset.filter(query).distinct()
         return self.queryset

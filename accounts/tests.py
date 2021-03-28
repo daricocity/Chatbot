@@ -10,7 +10,7 @@ class TestUserInfo(APITestCase):
     file_upload_url = "/message/file-upload"
     
     def setUp(self):
-        self.user = CustomUser.objects._create_user(username = 'admin', password = '123456')
+        self.user = CustomUser.objects._create_user(username = 'admin', password = '123456', email = 'daricocity@gmail.com')
         self.client.force_authenticate(user = self.user)
         
     def test_post_user_profile(self):
@@ -91,10 +91,10 @@ class TestUserInfo(APITestCase):
         
         UserProfile.objects.create(user = self.user, first_name = 'Adefemi', last_name = 'Oseni', caption = 'I am still breathing', about = 'I am a developer')
         
-        user2 = CustomUser.objects._create_user(username = 'tester', password = 'tester123')
+        user2 = CustomUser.objects._create_user(username = 'tester', password = 'tester123', email = 'tester@gmail.com')
         UserProfile.objects.create(user = user2, first_name = 'Olu', last_name = 'Shola', caption = 'I am alive', about = 'I am a developer')
         
-        user3 = CustomUser.objects._create_user(username = 'dreyman', password = 'drey123')
+        user3 = CustomUser.objects._create_user(username = 'dreyman', password = 'drey123', email = 'user3@gmail.com')
         UserProfile.objects.create(user = user3, first_name = 'Adeyemi', last_name = 'Shola', caption = 'I am alive', about = 'I am a developer')
         
         # test keyword for Adefemi
@@ -127,7 +127,8 @@ class TestAuth(APITestCase):
     def test_register(self):
         payload = {
             "username": "Admin",
-            "password": "123456"
+            "password": "123456",
+            "email": "daricocity@gmail.com"
         }
         
         # regiter
@@ -139,7 +140,8 @@ class TestAuth(APITestCase):
     def test_login(self):
         payload = {
             "username": "Admin",
-            "password": "123456"
+            "password": "123456",
+            "email": "daricocity@gmail.com"
         }
         
         # register
@@ -159,7 +161,8 @@ class TestAuth(APITestCase):
     def test_refresh(self):
         payload = {
             "username": "Admin",
-            "password": "123456"
+            "password": "123456",
+            "email": "daricocity@gmail.com"
         }
         
         # register

@@ -40,11 +40,11 @@ class TestMessage(APITestCase):
         from accounts.models import CustomUser, UserProfile
         
         # sender
-        self.sender = CustomUser.objects._create_user('sender', 'sender123')
+        self.sender = CustomUser.objects._create_user('sender', 'sender123', email = 'daricocity@gmail.com')
         UserProfile.objects.create(first_name = 'sender', last_name = 'sender', user = self.sender, caption = 'sender', about = 'sender')
         
         # reciever
-        self.receiver = CustomUser.objects._create_user('receiver', 'receiver123')
+        self.receiver = CustomUser.objects._create_user('receiver', 'receiver123', email = 'darl123@gmail.com')
         UserProfile.objects.create(first_name = 'receiver', last_name = 'receiver', user = self.receiver, caption = 'receiver', about = 'receiver')
         
         # authenticate
