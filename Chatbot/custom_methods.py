@@ -13,6 +13,11 @@ def custom_exception_handler(exc, context):
 
 class IsAuthenticatedCustom(BasePermission):
     def has_permission(self, request, view):
+        from accounts.views import decodeJWT
+        user = decodeJWT(request.META['HTTP_AUTHORIZATION'])
+        if not user:
+            return False
+        request.user = user
         if request.user and request.user.is_authenticated:
             CustomUser.objects.filter(id = request.user.id).update(is_online = timezone.now())
             return True
