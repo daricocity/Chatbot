@@ -34,14 +34,29 @@ class TestFileUpload(APITestCase):
         self.assertEqual(result["id"], 1)
         
 class TestMessage(APITestCase):
+    login_url = '/account/login'
     message_url = "/message/message"
     
     def setUp(self):
         from accounts.models import CustomUser, UserProfile
         
+        payload = {
+            "username": "sender",
+            "password": "sender123",
+            "email": "daricocity@gmail.com"
+        }
+        
         # sender
-        self.sender = CustomUser.objects._create_user('sender', 'sender123', email = 'daricocity@gmail.com')
+        self.sender = CustomUser.objects._create_user(**payload)
         UserProfile.objects.create(first_name = 'sender', last_name = 'sender', user = self.sender, caption = 'sender', about = 'sender')
+        
+        # login
+        response = self.client.post(self.login_url, data = payload)
+        result = response.json()
+        
+        self.bearer = {
+            'HTTP_AUTHORIZATION': 'Bearer {}'.format(result['access'])
+        }
         
         # reciever
         self.receiver = CustomUser.objects._create_user('receiver', 'receiver123', email = 'darl123@gmail.com')
@@ -59,7 +74,7 @@ class TestMessage(APITestCase):
         }
         
         # processing
-        response = self.client.post(self.message_url, data = payload)
+        response = self.client.post(self.message_url, data = payload, **self.bearer)
         result = response.json()
         # print(result)
         
@@ -69,7 +84,7 @@ class TestMessage(APITestCase):
         self.assertEqual(result['receiver']['user']['username'], 'receiver')
         
     def test_get_message(self):
-        response = self.client.get(self.message_url+f"?user_id={self.receiver.id}")
+        response = self.client.get(self.message_url+f"?user_id={self.receiver.id}", **self.bearer)
         result = response.json()
         
         self.assertEqual(response.status_code, 200)
