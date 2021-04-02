@@ -44,7 +44,10 @@ class MessageView(ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         
-        request.data._mutable = True
+        try:
+        	request.data._mutable = True
+        except:
+        	pass
         attachments = request.data.pop("attachments", None)
         
         if str(request.user.id) != str(request.data.get('sender_id', None)):
