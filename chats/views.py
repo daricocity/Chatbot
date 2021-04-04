@@ -44,7 +44,10 @@ class MessageView(ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         
-        request.data._mutable = True
+        try:
+        	request.data._mutable = True
+        except:
+        	pass
         attachments = request.data.pop("attachments", None)
         
         if str(request.user.id) != str(request.data.get('sender_id', None)):
@@ -63,24 +66,30 @@ class MessageView(ModelViewSet):
         return Response(serializer.data, status = 201)
     
     def update(self, request, *args, **kwargs):
-    
-        attachments = request.data.pop("attachments", None)
-        instance = self.get_object()
 
-        serializer = self.serializer_class(data = request.data, instance = instance, partial = True)
-        serializer.is_valid(raise_exception = True)
-        serializer.save()
+    	try:
+    		request.data._mutable = True
+    	except:
+    		pass
 
-        MessageAttachment.objects.filter(message_id = instance.id).delete()
+    	attachments = request.data.pop("attachments", None)
+    	instance = self.get_object()
 
-        if attachments:
-            MessageAttachment.objects.bulk_create([MessageAttachment(**attachment, message_id = instance.id) for attachment in attachments])
+    	print(request.data)
+    	serializer = self.serializer_class(data = request.data, instance = instance, partial = True)
+    	serializer.is_valid(raise_exception = True)
+    	serializer.save()
 
-            message_data = self.get_object()
-            return Response(self.serializer_class(message_data).data, status = 200)
+    	MessageAttachment.objects.filter(message_id = instance.id).delete()
 
-        handleRequest(serializer)
-        return Response(serializer.data, status = 200)
+    	if attachments:
+    		MessageAttachment.objects.bulk_create([MessageAttachment(**attachment, message_id = instance.id) for attachment in attachments])
+
+    		message_data = self.get_object()
+    		return Response(self.serializer_class(message_data).data, status = 200)
+
+    	handleRequest(serializer)
+    	return Response(serializer.data, status = 200)
     
     # def get_queryset(self):
     #     data = self.request.query_params.dict()
