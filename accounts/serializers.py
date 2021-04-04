@@ -28,9 +28,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             user_id = None
         
         from chats.models import Message
-        message = Message.objects.filter(
-            Q(sender = user_id, receiver = obj.user.id) | Q(sender = obj.user.id, receiver = user_id)
-        ).distinct()
+        message = Message.objects.filter(sender = obj.user.id, receiver = user_id, is_read = False).distinct()
         return message.count()
 
 class LoginSerializer(serializers.Serializer):
@@ -44,3 +42,6 @@ class RegisterSerializer(serializers.Serializer):
 
 class RefreshSerializer(serializers.Serializer):
     refresh = serializers.CharField()
+
+class FavoriteSerializer(serializers.Serializer):
+    favorite_id = serializers.IntegerField()

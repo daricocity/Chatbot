@@ -9,10 +9,10 @@ from rest_framework.views import APIView
 from .authentication import Authentication
 from django.contrib.auth import authenticate
 from rest_framework.response import Response
-from .models import Jwt, CustomUser, UserProfile
 from rest_framework.viewsets import ModelViewSet
 from Chatbot.custom_methods import IsAuthenticatedCustom
-from .serializers import LoginSerializer, RegisterSerializer, RefreshSerializer, UserProfileSerializer
+from .models import Jwt, CustomUser, UserProfile, Favourite
+from .serializers import LoginSerializer, RegisterSerializer, RefreshSerializer, UserProfileSerializer, FavoriteSerializer
 
 # Create your views here.
 def decodeJWT(bearer):
@@ -106,7 +106,7 @@ class UserProfileView(ModelViewSet):
         if self.request.method.lower() != 'get':
             return self.queryset
         
-        # userprofile of admin and login user will be exempted
+        # user profile of admin and login user will be exempted
         data = self.request.query_params.dict()
         data.pop("page", None)
         keyword = data.pop('keyword', None)
@@ -117,13 +117,13 @@ class UserProfileView(ModelViewSet):
             try:
                 return self.queryset.filter(query).filter(**data).exclude(
                     Q(user_id = self.request.user.id) | Q(user__is_superuser = True)
-                ).distinct()
+                ).distinct().order_by("user__user_favoured_id")
             except Exception as e:
                 raise Exception(e)
             
         return self.queryset.filter(**data).exclude(
                     Q(user_id = self.request.user.id) | Q(user__is_superuser = True)
-                ).distinct()
+                ).distinct().order_by("user__user_favoured_id")
     
     @staticmethod
     def get_query(query_string, search_fields):
@@ -170,4 +170,32 @@ class LogoutView(APIView):
         user_id = request.user.id
         Jwt.objects.filter(user_id=user_id).delete()
         return Response("logged out successfully", status=200)
+
+class UpdateFavoriteView(APIView):
+    permission_classes = (IsAuthenticatedCustom,)
+    serializer_class = FavoriteSerializer
+
+    def post(self, request, *args, **kwargs):
+        user_id = request.user.id
+        serializer = self.serializer_class(data = request.data)
+        serializer.is_valid(raise_exception = True)
+        favorite = Favourite.objects.filter(user_id = user_id, favorite_id = serializer.validated_data["favorite_id"])
+        if favorite:
+            favorite.delete()
+            return  Response("successful")
+        Favourite.objects.create(user_id = user_id, favorite_id = serializer.validated_data["favorite_id"])
+        return Response("successful")
+
+class CheckIsFavoriteView(APIView):
+    permission_classes = (IsAuthenticatedCustom)
+
+    def get(self, request, *args, **kwargs):
+        user_id = request.user.id
+        favorite_id = kwargs.get("favorite_id", None)
+        favorite = Favourite.objects.create(user_id = user_id, favorite_id = favorite_id)
+        if favorite:
+            return Response(True)
+        return  Response(False)
+
+
 
