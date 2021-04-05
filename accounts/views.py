@@ -11,7 +11,7 @@ from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from Chatbot.custom_methods import IsAuthenticatedCustom
-from .models import Jwt, CustomUser, UserProfile, Favourite
+from .models import Jwt, CustomUser, UserProfile, Favorite
 from .serializers import LoginSerializer, RegisterSerializer, RefreshSerializer, UserProfileSerializer, FavoriteSerializer
 
 # Create your views here.
@@ -179,20 +179,20 @@ class UpdateFavoriteView(APIView):
         user_id = request.user.id
         serializer = self.serializer_class(data = request.data)
         serializer.is_valid(raise_exception = True)
-        favorite = Favourite.objects.filter(user_id = user_id, favorite_id = serializer.validated_data["favorite_id"])
+        favorite = Favorite.objects.filter(user_id = user_id, favorite_id = serializer.validated_data["favorite_id"])
         if favorite:
             favorite.delete()
             return  Response("successful")
-        Favourite.objects.create(user_id = user_id, favorite_id = serializer.validated_data["favorite_id"])
+        Favorite.objects.create(user_id = user_id, favorite_id = serializer.validated_data["favorite_id"])
         return Response("successful")
 
 class CheckIsFavoriteView(APIView):
-    permission_classes = (IsAuthenticatedCustom)
+    permission_classes = (IsAuthenticatedCustom,)
 
     def get(self, request, *args, **kwargs):
         user_id = request.user.id
         favorite_id = kwargs.get("favorite_id", None)
-        favorite = Favourite.objects.create(user_id = user_id, favorite_id = favorite_id)
+        favorite = Favorite.objects.create(user_id = user_id, favorite_id = favorite_id)
         if favorite:
             return Response(True)
         return  Response(False)

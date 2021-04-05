@@ -70,10 +70,10 @@ class Jwt(models.Model):
     created_at = models.DateTimeField(auto_now_add = True)
     updated_at = models.DateTimeField(auto_now = True)
 
-class Favourite(models.Model):
-    user = models.ForeignKey(CustomUser, related_name="user_favorites", on_delete=models.CASCADE)
-    favorite = models.ForeignKey(CustomUser, related_name="user_favoured", on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
+class Favorite(models.Model):
+    user = models.ForeignKey(CustomUser, related_name = "user_favorites", on_delete = models.CASCADE)
+    favorite = models.ForeignKey(CustomUser, related_name = "user_favoured", on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add = True)
 
     def __str__(self):
         return f"{self.user.username} - {self.favorite.username}"
