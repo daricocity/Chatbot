@@ -71,12 +71,12 @@ class Jwt(models.Model):
     updated_at = models.DateTimeField(auto_now = True)
 
 class Favorite(models.Model):
-    user = models.ForeignKey(CustomUser, related_name = "user_favorites", on_delete = models.CASCADE)
-    favorite = models.ForeignKey(CustomUser, related_name = "user_favoured", on_delete=models.CASCADE)
+    user = models.OneToOneField(CustomUser, related_name = "user_favorites", on_delete = models.CASCADE)
+    favorite = models.ManyToManyField(CustomUser, related_name = "user_favoured")
     created_at = models.DateTimeField(auto_now_add = True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.favorite.username}"
+        return f"{self.user.username}"
 
     class Meta:
         ordering = ("created_at",)

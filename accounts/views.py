@@ -2,13 +2,13 @@ import re
 import jwt
 import random
 import string
-from django.db.models import Q
 from django.conf import settings
 from datetime import datetime, timedelta
 from rest_framework.views import APIView
 from .authentication import Authentication
 from django.contrib.auth import authenticate
 from rest_framework.response import Response
+from django.db.models import Q, Count, OuterRef
 from rest_framework.viewsets import ModelViewSet
 from Chatbot.custom_methods import IsAuthenticatedCustom
 from .models import Jwt, CustomUser, UserProfile, Favorite
@@ -117,13 +117,25 @@ class UserProfileView(ModelViewSet):
             try:
                 return self.queryset.filter(query).filter(**data).exclude(
                     Q(user_id = self.request.user.id) | Q(user__is_superuser = True)
-                ).distinct().order_by("user__user_favoured_id")
+                ).annotate(
+                    fav_count=Count(self.user_fav_query(self.request.user))
+                ).order_by("-fav_count")
             except Exception as e:
                 raise Exception(e)
             
-        return self.queryset.filter(**data).exclude(
-                    Q(user_id = self.request.user.id) | Q(user__is_superuser = True)
-                ).distinct().order_by("user__user_favoured_id")
+        result =  self.queryset.filter(**data).exclude(
+            Q(user_id = self.request.user.id) | Q(user__is_superuser = True)
+        ).annotate(
+            fav_count = Count(self.user_fav_query(self.request.user))
+        ).order_by("-fav_count")
+        return result
+
+    @staticmethod
+    def user_fav_query(user):
+        try:
+            return user.user_favorites.favorite.filter(id=OuterRef("user_id")).values("pk")
+        except Exception:
+            return []
     
     @staticmethod
     def get_query(query_string, search_fields):
@@ -176,26 +188,67 @@ class UpdateFavoriteView(APIView):
     serializer_class = FavoriteSerializer
 
     def post(self, request, *args, **kwargs):
-        user_id = request.user.id
         serializer = self.serializer_class(data = request.data)
         serializer.is_valid(raise_exception = True)
-        favorite = Favorite.objects.filter(user_id = user_id, favorite_id = serializer.validated_data["favorite_id"])
+
+        try:
+            favorite_user = CustomUser.objects.get(id = serializer.validated_data["favorite_id"])
+        except Exception:
+            raise Exception("Favorite user does not exist")
+
+        try:
+            fav = request.user.user_favorites
+        except Exception:
+            fav = Favorite.objects.create(user_id = request.user.id)
+
+        favorite = fav.favorite.filter(id = favorite_user.id)
         if favorite:
-            favorite.delete()
-            return  Response("successful")
-        Favorite.objects.create(user_id = user_id, favorite_id = serializer.validated_data["favorite_id"])
-        return Response("successful")
+            fav.favorite.remove(favorite_user)
+            return  Response("removed")
+
+        fav.favorite.add(favorite_user)
+        return Response("added")
 
 class CheckIsFavoriteView(APIView):
     permission_classes = (IsAuthenticatedCustom,)
 
     def get(self, request, *args, **kwargs):
-        user_id = request.user.id
         favorite_id = kwargs.get("favorite_id", None)
-        favorite = Favorite.objects.create(user_id = user_id, favorite_id = favorite_id)
-        if favorite:
-            return Response(True)
-        return  Response(False)
+        try:
+            favorite = request.user.user_favorites.favorite.filter(id = favorite_id)
+            if favorite:
+                return Response(True)
+            return  Response(False)
+        except Exception:
+            return Response(False)
+
+
+
+# class UpdateFavoriteView(APIView):
+#     permission_classes = (IsAuthenticatedCustom,)
+#     serializer_class = FavoriteSerializer
+#
+#     def post(self, request, *args, **kwargs):
+#         user_id = request.user.id
+#         serializer = self.serializer_class(data = request.data)
+#         serializer.is_valid(raise_exception = True)
+#         favorite = Favorite.objects.filter(user_id = user_id, favorite_id = serializer.validated_data["favorite_id"])
+#         if favorite:
+#             favorite.delete()
+#             return  Response("successful")
+#         Favorite.objects.create(user_id = user_id, favorite_id = serializer.validated_data["favorite_id"])
+#         return Response("successful")
+#
+# class CheckIsFavoriteView(APIView):
+#     permission_classes = (IsAuthenticatedCustom,)
+#
+#     def get(self, request, *args, **kwargs):
+#         user_id = request.user.id
+#         favorite_id = kwargs.get("favorite_id", None)
+#         favorite = Favorite.objects.create(user_id = user_id, favorite_id = favorite_id)
+#         if favorite:
+#             return Response(True)
+#         return  Response(False)
 
 
 

@@ -2,6 +2,7 @@ import json
 import requests
 from django.db.models import Q
 from django.conf import settings
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from Chatbot.custom_methods import IsAuthenticatedCustom
@@ -45,9 +46,9 @@ class MessageView(ModelViewSet):
     def create(self, request, *args, **kwargs):
         
         try:
-        	request.data._mutable = True
+            request.data._mutable = True
         except:
-        	pass
+            pass
         attachments = request.data.pop("attachments", None)
         
         if str(request.user.id) != str(request.data.get('sender_id', None)):
@@ -67,36 +68,41 @@ class MessageView(ModelViewSet):
     
     def update(self, request, *args, **kwargs):
 
-    	try:
-    		request.data._mutable = True
-    	except:
-    		pass
+        try:
+            request.data._mutable = True
+        except:
+            pass
 
-    	attachments = request.data.pop("attachments", None)
-    	instance = self.get_object()
+        attachments = request.data.pop("attachments", None)
+        instance = self.get_object()
 
-    	print(request.data)
-    	serializer = self.serializer_class(data = request.data, instance = instance, partial = True)
-    	serializer.is_valid(raise_exception = True)
-    	serializer.save()
+        serializer = self.serializer_class(data = request.data, instance = instance, partial = True)
+        serializer.is_valid(raise_exception = True)
+        serializer.save()
 
-    	MessageAttachment.objects.filter(message_id = instance.id).delete()
+        MessageAttachment.objects.filter(message_id = instance.id).delete()
 
-    	if attachments:
-    		MessageAttachment.objects.bulk_create([MessageAttachment(**attachment, message_id = instance.id) for attachment in attachments])
+        if attachments:
+            MessageAttachment.objects.bulk_create([MessageAttachment(**attachment, message_id = instance.id) for attachment in attachments])
+            message_data = self.get_object()
+            return Response(self.serializer_class(message_data).data, status = 200)
 
-    		message_data = self.get_object()
-    		return Response(self.serializer_class(message_data).data, status = 200)
+        handleRequest(serializer)
+        return Response(serializer.data, status = 200)
 
-    	handleRequest(serializer)
-    	return Response(serializer.data, status = 200)
-    
-    # def get_queryset(self):
-    #     data = self.request.query_params.dict()
-    #     user_id = data.get("user_id", None)
-    #     if user_id is None:
-    #         raise Exception("Specify the user to get message for")
-    #     active_user_id = self.request.user.id
-    #     return self.queryset.filter(
-    #         Q(sender = user_id, receiver = active_user_id) | Q(sender = active_user_id, receiver = user_id)
-    #     ).distinct()
+class ReadMultipleMessages(APIView):
+    def post(self, request):
+        data = request.data.get("message_ids", None)
+        Message.objects.filter(id__in = data).update(is_read=True)
+        return Response("success")
+
+
+# def get_queryset(self):
+#     data = self.request.query_params.dict()
+#     user_id = data.get("user_id", None)
+#     if user_id is None:
+#         raise Exception("Specify the user to get message for")
+#     active_user_id = self.request.user.id
+#     return self.queryset.filter(
+#         Q(sender = user_id, receiver = active_user_id) | Q(sender = active_user_id, receiver = user_id)
+#     ).distinct()
