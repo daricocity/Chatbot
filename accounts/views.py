@@ -117,17 +117,13 @@ class UserProfileView(ModelViewSet):
             try:
                 return self.queryset.filter(query).filter(**data).exclude(
                     Q(user_id = self.request.user.id) | Q(user__is_superuser = True)
-                ).annotate(
-                    fav_count=Count(self.user_fav_query(self.request.user))
-                ).order_by("-fav_count")
+                ).order_by("-id")
             except Exception as e:
                 raise Exception(e)
             
         result =  self.queryset.filter(**data).exclude(
             Q(user_id = self.request.user.id) | Q(user__is_superuser = True)
-        ).annotate(
-            fav_count = Count(self.user_fav_query(self.request.user))
-        ).order_by("-fav_count")
+        ).order_by("-id")
         return result
 
     @staticmethod
@@ -223,6 +219,39 @@ class CheckIsFavoriteView(APIView):
             return Response(False)
 
 
+# class UserProfileView(ModelViewSet):
+#     queryset = UserProfile.objects.all()
+#     serializer_class = UserProfileSerializer
+#     permission_classes = (IsAuthenticatedCustom,)
+    
+#     def get_queryset(self):
+#         # to return user profile of all
+#         if self.request.method.lower() != 'get':
+#             return self.queryset
+        
+#         # user profile of admin and login user will be exempted
+#         data = self.request.query_params.dict()
+#         data.pop("page", None)
+#         keyword = data.pop('keyword', None)
+        
+#         if keyword:
+#             search_fields = ('user__username', 'first_name', 'last_name', 'user__email')
+#             query = self.get_query(keyword, search_fields)
+#             try:
+#                 return self.queryset.filter(query).filter(**data).exclude(
+#                     Q(user_id = self.request.user.id) | Q(user__is_superuser = True)
+#                 ).annotate(
+#                     fav_count = Count(self.user_fav_query(self.request.user))
+#                 ).order_by("fav_count")
+#             except Exception as e:
+#                 raise Exception(e)
+            
+#         result =  self.queryset.filter(**data).exclude(
+#             Q(user_id = self.request.user.id) | Q(user__is_superuser = True)
+#         ).annotate(
+#             fav_count = Count(self.user_fav_query(self.request.user))
+#         ).order_by("-fav_count")
+#         return result
 
 # class UpdateFavoriteView(APIView):
 #     permission_classes = (IsAuthenticatedCustom,)
@@ -249,6 +278,7 @@ class CheckIsFavoriteView(APIView):
 #         if favorite:
 #             return Response(True)
 #         return  Response(False)
+
 
 
 
